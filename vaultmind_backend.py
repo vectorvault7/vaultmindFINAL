@@ -228,6 +228,21 @@ def run_vision_ocr(image_path: str, prompt: str = "Free OCR. Extract all text an
     result = _vision_model.infer(_vision_processor, prompt=prompt, image_file=image_path)
     return result if isinstance(result, str) else str(result)
 
+
+def _preload_vision_ocr():
+    """Forces the vision/OCR model to download and initialize now, at
+    startup, instead of on someone's first real image upload — avoids
+    a proxy timeout on that first request."""
+    from PIL import Image
+    dummy_path = os.path.join(SCRATCH_DIR, "_warmup.png")
+    if not os.path.exists(dummy_path):
+        Image.new("RGB", (32, 32), color="white").save(dummy_path)
+    run_vision_ocr(dummy_path, prompt="test")
+
+
+
+
+
 # =====================================================================
 # 4. LOCAL KNOWLEDGE BASE  (RAG over SOPs / manuals / correspondence)
 # =====================================================================
@@ -461,6 +476,7 @@ class AgentState(TypedDict):
     trace: List[dict]       # streamed to the frontend
     final_answer: Optional[str]
     iterations: int
+    _pending_action: Optional[dict] 
 
 
 def node_router(state: AgentState) -> AgentState:
@@ -641,7 +657,14 @@ def start_server():
     import uvicorn
 
     build_knowledge_base()
-    net_monitor.start()  # start counting AFTER setup/downloads are done
+
+    print("[VaultMind] Pre-loading all models now so the first real request doesn't time out...")
+    model_manager.get("reasoning")
+    model_manager.get("coding")
+    _preload_vision_ocr()
+    print("[VaultMind] All models downloaded and cached — first real request will be fast.")
+
+    net_monitor.start()  # start counting AFTER setup/downloads are doneg AFTER setup/downloads are done
 
     print(f"\n{'='*60}")
     print("[VaultMind] Starting on 0.0.0.0:8000")
