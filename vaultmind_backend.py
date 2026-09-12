@@ -56,7 +56,7 @@ if LIGHTWEIGHT_MODE:
         "reasoning": "Qwen/Qwen2.5-7B-Instruct",
         "coding": "Qwen/Qwen2.5-Coder-7B-Instruct",
         "vision": "Qwen/Qwen2.5-VL-7B-Instruct",
-        "ocr": "deepseek-ai/DeepSeek-OCR-2",
+        "ocr": "unsloth/DeepSeek-OCR-2",
     }
 else:
     # Full production stack. Qwen3.6-27B and Qwen3-Coder-30B-A3B are
@@ -66,7 +66,7 @@ else:
         "reasoning": "Qwen/Qwen3.6-27B",
         "coding": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
         "vision": "Qwen/Qwen2.5-VL-7B-Instruct",
-        "ocr": "deepseek-ai/DeepSeek-OCR-2",
+        "ocr":  "unsloth/DeepSeek-OCR-2",
     }
 
 EMBEDDING_MODEL = "BAAI/bge-m3"
@@ -206,26 +206,29 @@ def _pdf_to_image(pdf_path: str) -> str:
 
 def run_vision_ocr(image_path: str, prompt: str = "Free OCR. Extract all text and describe any diagrams or tables.") -> str:
     global _vision_model, _vision_processor
-    from transformers import AutoProcessor
+    from transformers import AutoTokenizer
 
     if image_path.lower().endswith(".pdf"):
         image_path = _pdf_to_image(image_path)
 
     if _vision_model is None:
         print(f"[VisionOCR] Loading {MODELS['ocr']} ...")
-        _vision_processor = AutoProcessor.from_pretrained(MODELS["ocr"], trust_remote_code=True)
+        _vision_processor = AutoTokenizer.from_pretrained(MODELS["ocr"], trust_remote_code=True)
         try:
             _vision_model = AutoModel.from_pretrained(
                 MODELS["ocr"], trust_remote_code=True, use_safetensors=True,
                 attn_implementation="flash_attention_2", torch_dtype=torch.bfloat16,
             ).eval().cuda()
         except Exception:
-            # T4/P100 (Turing/Pascal) don't support flash-attn-2 — fall back to eager.
             _vision_model = AutoModel.from_pretrained(
                 MODELS["ocr"], trust_remote_code=True, use_safetensors=True,
                 attn_implementation="eager", torch_dtype=torch.bfloat16,
             ).eval().cuda()
-    result = _vision_model.infer(_vision_processor, prompt=prompt, image_file=image_path)
+    result = _vision_model.infer(
+        _vision_processor, prompt=prompt, image_file=image_path,
+        output_path=SCRATCH_DIR, base_size=1024, image_size=768,
+        crop_mode=True, save_results=False,
+    )
     return result if isinstance(result, str) else str(result)
 
 
