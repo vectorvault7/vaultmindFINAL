@@ -1,0 +1,44 @@
+# Core web server — no ngrok/nest_asyncio needed on RunPod (plain script,
+# no notebook event loop to juggle; use RunPod's HTTP port proxy instead).
+fastapi==0.141.1
+uvicorn==0.52.4
+python-multipart
+
+# Agent orchestration
+# Verified: our exact StateGraph/add_conditional_edges usage works
+# unchanged against the current 1.x major release.
+langgraph==1.2.11
+
+# Models / inference
+# NOTE: transformers is deliberately pinned to the latest 4.x release
+# (4.57.6), NOT the new 5.x major (5.17.0). DeepSeek-OCR-2 loads via
+# trust_remote_code=True — its custom model code was written against
+# the 4.x internal API, and transformers 5.0 made breaking internal
+# changes. Jumping to 5.x risks breaking OCR loading on demo day for
+# no real benefit. Revisit this once DeepSeek-OCR-2 confirms 5.x support.
+transformers==4.57.6
+accelerate==1.15.0
+bitsandbytes==0.50.2
+sentencepiece
+einops
+addict
+easydict
+
+# Embeddings + vector search
+# Verified: SentenceTransformer.encode(..., normalize_embeddings=True)
+# and faiss.IndexFlatIP both work unchanged on these current versions.
+sentence-transformers==6.0.1
+faiss-cpu==1.15.0
+# numpy: intentionally NOT pinned — use whatever the RunPod PyTorch
+# template already has installed, avoids downgrade cascades.
+
+# Deliverable generation
+python-docx==1.2.0
+openpyxl==3.1.5
+python-pptx==1.0.2
+pdf2image==1.17.0
+
+# torch: NOT installed here — use a RunPod pod template that already
+# ships a matching torch + CUDA build (e.g. a "PyTorch 2.x + CUDA 12.x"
+# template). Reinstalling torch yourself risks a version mismatch with
+# the pod's GPU driver.
