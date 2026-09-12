@@ -49,7 +49,7 @@ import torch
 # you ever fall back to testing on a smaller/shared GPU. Defaults to
 # False here since RunPod's rented GPU is the real target: the full
 # production stack we spec'd for the actual SIH demo.
-LIGHTWEIGHT_MODE = os.environ.get("VAULTMIND_LIGHTWEIGHT", "0") == "1"
+LIGHTWEIGHT_MODE = True
 
 if LIGHTWEIGHT_MODE:
     MODELS = {
