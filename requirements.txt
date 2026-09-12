@@ -23,11 +23,20 @@ sentencepiece
 einops
 addict
 easydict
+hf_transfer
+# hf_transfer: RunPod's PyTorch template pre-sets HF_HUB_ENABLE_HF_TRANSFER=1
+# (a faster Rust-based downloader for Hugging Face model weights), but the
+# package itself isn't preinstalled — without it, the first real model
+# download crashes with "hf_transfer package is not available."
 
 # Embeddings + vector search
-# Verified: SentenceTransformer.encode(..., normalize_embeddings=True)
-# and faiss.IndexFlatIP both work unchanged on these current versions.
-sentence-transformers==6.0.1
+# sentence-transformers is pinned to 5.7.0, NOT the newer 6.x line —
+# sentence-transformers>=6.0.0 hard-requires transformers>=5.0.0, which
+# directly conflicts with the 4.x pin above (kept for DeepSeek-OCR-2
+# compatibility). 5.7.0 is the last release still accepting
+# transformers>=4.41.0,<6.0.0 — verified our exact encode() usage
+# still works unchanged on it.
+sentence-transformers==5.7.0
 faiss-cpu==1.15.0
 # numpy: intentionally NOT pinned — use whatever the RunPod PyTorch
 # template already has installed, avoids downgrade cascades.
