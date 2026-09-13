@@ -217,6 +217,9 @@ def run_vision_ocr(image_path: str, prompt: str = "Free OCR. Extract all text an
 
     if image_path.lower().endswith(".pdf"):
         image_path = _pdf_to_image(image_path)
+    
+    if not prompt.startswith("<image>"):
+        prompt = f"<image>\n{prompt}"
 
     if _vision_model is None:
         print(f"[VisionOCR] Loading {MODELS['ocr']} ...")
