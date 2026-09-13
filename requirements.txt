@@ -28,6 +28,11 @@ hf_transfer
 # (a faster Rust-based downloader for Hugging Face model weights), but the
 # package itself isn't preinstalled — without it, the first real model
 # download crashes with "hf_transfer package is not available."
+matplotlib
+# matplotlib: DeepSeek-OCR-2 loads via trust_remote_code=True, and its
+# custom modeling file declares matplotlib as a dependency even though
+# we never call any plotting functions ourselves — transformers checks
+# and enforces this at import time regardless.
 
 # Embeddings + vector search
 # sentence-transformers is pinned to 5.7.0, NOT the newer 6.x line —
