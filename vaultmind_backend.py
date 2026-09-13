@@ -541,18 +541,22 @@ def node_tool(state: AgentState) -> AgentState:
     state["trace"].append({"step": "tool_call", "tool": tool, "detail": result[:400]})
     state["history"].append({"action": action, "result": result})
     state["iterations"] += 1
+
+    # Fallback now lives HERE, inside a real node — a conditional-edge
+    # function can decide routing but LangGraph silently discards any
+    # state it tries to mutate, which is exactly what was swallowing
+    # this fallback text before.
+    if not state.get("final_answer") and state["iterations"] >= MAX_AGENT_ITERATIONS:
+        summary = "\n".join(h["result"] for h in state["history"][-3:])
+        state["final_answer"] = f"(Stopped after {MAX_AGENT_ITERATIONS} steps) Summary of findings:\n{summary}"
+        state["trace"].append({"step": "observe", "detail": "Max iterations reached — returning best-effort summary."})
+
     return state
 
 
 def edge_after_tool(state: AgentState) -> str:
-    if state.get("final_answer"):
-        return "done"
-    if state["iterations"] >= MAX_AGENT_ITERATIONS:
-        state["trace"].append({"step": "observe", "detail": "Max iterations reached — returning best-effort summary."})
-        summary = "\n".join(h["result"] for h in state["history"][-3:])
-        state["final_answer"] = f"(Stopped after {MAX_AGENT_ITERATIONS} steps) Summary of findings:\n{summary}"
-        return "done"
-    return "continue"
+    # Purely read-only now — no state mutation belongs in an edge function.
+    return "done" if state.get("final_answer") else "continue"
 
 
 graph = StateGraph(AgentState)
