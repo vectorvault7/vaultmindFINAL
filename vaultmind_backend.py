@@ -42,6 +42,13 @@ from typing import TypedDict, List, Optional, Literal
 
 import torch
 
+# Registers HEIC/HEIF support with PIL globally — without this, an iPhone
+# photo (not a screenshot; those are always PNG) would fail the same way
+# the malformed-filename bug did, since plain PIL can't open HEIC at all.
+# Purely additive: verified this doesn't change how PNG/JPEG/etc. behave.
+from pillow_heif import register_heif_opener
+register_heif_opener()
+
 # =====================================================================
 # 1. CONFIG
 # =====================================================================
@@ -625,7 +632,9 @@ def network_status():
 def chat(message: str = Form(...), image: Optional[UploadFile] = File(None)):
     image_path = None
     if image is not None:
-        image_path = os.path.join(SCRATCH_DIR, image.filename)
+        ext = os.path.splitext(image.filename)[1] or ".png"
+        safe_name = f"upload_{int(time.time()*1000)}{ext}"
+        image_path = os.path.join(SCRATCH_DIR, safe_name)
         with open(image_path, "wb") as f:
             f.write(image.file.read())
     result = run_agent(message, image_path)
